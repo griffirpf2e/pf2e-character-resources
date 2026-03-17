@@ -1,0 +1,19 @@
+{
+  "id": "pf2e-character-resources",
+  "title": "Character Resources",
+  "description": "Let characters define and track custom numeric resources on their own character sheets. Inspired by Party Resources, but per-character.",
+  "authors": [{"name": "Your Name"}],
+  "url": "https://github.com/your-org/pf2e-character-resources",
+  "license": "MIT",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": "11",
+    "verified": "12",
+    "maximum": "14"
+  },
+  "languages": [
+    { "lang": "en", "name": "English", "path": "languages/en.json" }
+  ],
+  "esmodules": ["./src/init.js"],
+  "styles": ["./styles/init.css"]
+}

@@ -1,0 +1,445 @@
+/* Character Resources — block on character sheet */
+
+/* PF2e sheet: roll-icon in aside .hitpoints .hp-small (same row as dailies / other sheet icons) */
+.actor.sheet.character aside .sidebar a.roll-icon.charres,
+.actor.sheet.character aside .hitpoints .hp-small a.roll-icon.charres {
+  padding: 3px 0 0 0;
+}
+
+.actor.sheet.character aside .sidebar a.roll-icon.charres i,
+.actor.sheet.character aside .hitpoints .hp-small a.roll-icon.charres i {
+  font-size: 1.1rem;
+}
+
+/* Fallback: standalone button when .hp-small not found */
+.character-resources-button-wrap {
+  margin: 0.4em 0;
+  flex-shrink: 0;
+}
+
+.character-resources-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.35em 0.6em;
+  font-size: 0.9em;
+  border: 1px solid var(--color-border-dark, #333);
+  border-radius: 4px;
+  background: var(--color-bg-button, #ddd);
+  color: var(--color-text-dark, #333);
+  cursor: pointer;
+}
+
+.character-resources-open-btn:hover {
+  background: var(--color-bg-button-hover, #ccc);
+}
+
+.character-resources-open-btn i {
+  font-size: 1em;
+}
+
+.character-resources-block {
+  margin: 0.5em 0;
+}
+
+.character-resources {
+  border: 1px solid var(--color-border-light-primary, #bbb);
+  border-radius: 4px;
+  padding: 0.5em 0.75em;
+  background: var(--color-bg-app, rgba(0, 0, 0, 0.05));
+}
+
+.character-resources-title {
+  font-size: 0.9em;
+  margin: 0 0 0.5em 0;
+  border: none;
+  font-weight: 600;
+}
+
+.character-resources-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.character-resource {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35em 0.75em;
+  margin-bottom: 0.5em;
+  padding: 0.25em 0;
+  border-bottom: 1px solid var(--color-border-light-secondary, rgba(0, 0, 0, 0.1));
+}
+
+.character-resource:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.character-resource-empty {
+  color: var(--color-text-muted, #666);
+  font-style: italic;
+  padding: 0.25em 0;
+}
+
+.resource-header {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  min-width: 0;
+}
+
+.resource-icon {
+  width: 1.25em;
+  height: 1.25em;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.resource-name {
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.resource-value {
+  font-weight: 600;
+  margin-left: 0.25em;
+}
+
+.resource-max {
+  color: var(--color-text-muted, #666);
+  font-size: 0.95em;
+}
+
+.resource-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.2em;
+  margin-left: auto;
+}
+
+.resource-btn {
+  width: 1.75em;
+  height: 1.75em;
+  padding: 0;
+  border: 1px solid var(--color-border-dark, #333);
+  border-radius: 3px;
+  background: var(--color-bg-button, #ddd);
+  cursor: pointer;
+  font-size: 1em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resource-btn:hover:not(:disabled) {
+  background: var(--color-bg-button-hover, #ccc);
+}
+
+.resource-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.resource-btn.edit {
+  width: auto;
+  padding: 0 0.4em;
+  font-size: 0.9em;
+}
+
+.resource-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--color-border-light-secondary, rgba(0, 0, 0, 0.15));
+  border-radius: 3px;
+  overflow: hidden;
+  flex-basis: 100%;
+}
+
+.resource-fill {
+  height: 100%;
+  background: var(--color-primary, #5e9cd1);
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+.character-resources-manage {
+  margin-top: 0.5em;
+  padding: 0.25em 0.5em;
+  font-size: 0.85em;
+  border: 1px solid var(--color-border-dark, #333);
+  border-radius: 3px;
+  background: var(--color-bg-button, #ddd);
+  cursor: pointer;
+}
+
+.character-resources-manage:hover {
+  background: var(--color-bg-button-hover, #ccc);
+}
+
+/* Manage dialog */
+.charres-manage-hint {
+  margin-bottom: 0.75em;
+  color: var(--color-text-muted, #666);
+  font-size: 0.9em;
+}
+
+.manage-resources-list {
+  list-style: none;
+  margin: 0 0 0.75em 0;
+  padding: 0;
+  border: 1px solid var(--color-border-light-primary, #bbb);
+  border-radius: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.manage-resource-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.35em 0.5em;
+  border-bottom: 1px solid var(--color-border-light-secondary, rgba(0, 0, 0, 0.1));
+}
+
+.manage-resource-item:last-child {
+  border-bottom: none;
+}
+
+.manage-resource-item .drag-handle {
+  cursor: move;
+  color: var(--color-text-muted, #666);
+}
+
+.manage-resource-item .name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+}
+
+.manage-resource-item .value {
+  flex-shrink: 0;
+  color: var(--color-text-muted, #666);
+}
+
+.manage-resource-item .edit-item,
+.manage-resource-item .remove-item {
+  padding: 0.2em 0.4em;
+  font-size: 0.85em;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.add-resource-btn {
+  padding: 0.4em 0.75em;
+  border: 1px solid var(--color-border-dark, #333);
+  border-radius: 3px;
+  background: var(--color-bg-button, #ddd);
+  cursor: pointer;
+}
+
+.add-resource-btn:hover {
+  background: var(--color-bg-button-hover, #ccc);
+}
+
+/* Edit form (in dialog) */
+.character-resource-form .form-group {
+  margin-bottom: 0.75em;
+}
+
+.character-resource-form .form-group label {
+  display: block;
+  margin-bottom: 0.25em;
+  font-weight: 500;
+}
+
+.character-resource-form .form-group input,
+.character-resource-form .form-group textarea {
+  width: 100%;
+}
+
+.character-resource-form .form-group textarea {
+  resize: vertical;
+  min-height: 4em;
+}
+
+.charres-form-linked-note {
+  margin-bottom: 0.5em;
+  font-size: 0.9em;
+  color: var(--color-text-muted, #666);
+}
+
+/* ---- Spellcraft-style Character Resources dialog ---- */
+.charres-dialog-content {
+  min-width: 320px;
+}
+
+.charres-header {
+  margin: 0 0 0.5em 0;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--color-border-light-primary, #bbb);
+}
+
+.charres-title {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.charres-body {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.charres-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+
+.charres-table th,
+.charres-table td {
+  padding: 0.35em 0.4em;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border-light-secondary, rgba(0, 0, 0, 0.08));
+}
+
+.charres-th-name,
+.charres-cell-name {
+  min-width: 120px;
+}
+
+.charres-th-uses,
+.charres-cell-uses {
+  width: 5em;
+  min-width: 4em;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.charres-th-controls,
+.charres-cell-controls {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.charres-cell-icon {
+  width: 2em;
+}
+
+.charres-icon {
+  width: 1.75em;
+  height: 1.75em;
+  object-fit: contain;
+  border-radius: 3px;
+}
+
+.charres-icon-placeholder {
+  display: inline-block;
+  width: 1.75em;
+  height: 1.75em;
+  background: var(--color-border-light-secondary, rgba(0, 0, 0, 0.1));
+  border-radius: 3px;
+}
+
+.charres-resource-link {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.charres-resource-link:hover {
+  text-decoration: underline;
+}
+
+.charres-cell-controls .charres-btn {
+  width: 1.6em;
+  height: 1.6em;
+  padding: 0;
+  margin: 0 0.1em;
+  border: 1px solid var(--color-border-dark, #333);
+  border-radius: 3px;
+  background: var(--color-bg-button, #ddd);
+  cursor: pointer;
+  font-size: 0.9em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.charres-cell-controls .charres-btn:hover {
+  background: var(--color-bg-button-hover, #ccc);
+}
+
+.charres-cell-controls .charres-btn.edit,
+.charres-cell-controls .charres-btn.delete {
+  width: auto;
+  padding: 0 0.35em;
+}
+
+.charres-empty {
+  color: var(--color-text-muted, #666);
+  font-style: italic;
+  text-align: center;
+  padding: 0.75em;
+}
+
+/* + Add box and drop zone (spellcraft-style) */
+.charres-add-row {
+  background: var(--color-bg-app, rgba(0, 0, 0, 0.03));
+}
+
+.charres-add-cell {
+  padding: 0.5em 0.4em;
+  vertical-align: middle;
+}
+
+.charres-add-area {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  flex-wrap: wrap;
+}
+
+.charres-add-box {
+  width: 2.25em;
+  height: 2.25em;
+  padding: 0;
+  border: 2px solid var(--color-border-dark, #555);
+  border-radius: 4px;
+  background: var(--color-bg-button, #e0e0e0);
+  color: var(--color-text-dark, #333);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1em;
+  flex-shrink: 0;
+}
+
+.charres-add-box:hover {
+  background: var(--color-bg-button-hover, #ccc);
+  border-color: var(--color-border-dark, #333);
+}
+
+.charres-drop-zone {
+  flex: 1;
+  min-width: 140px;
+  padding: 0.4em 0.6em;
+  border: 2px dashed var(--color-border-light-primary, #999);
+  border-radius: 4px;
+  background: var(--color-bg-app, rgba(0, 0, 0, 0.02));
+  color: var(--color-text-muted, #666);
+  font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.charres-drop-zone.charres-drop-over {
+  border-color: var(--color-primary, #5e9cd1);
+  background: rgba(94, 156, 209, 0.1);
+  color: var(--color-text-dark, #333);
+}

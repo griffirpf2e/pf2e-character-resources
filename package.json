@@ -1,0 +1,9 @@
+{
+  "name": "pf2e-character-resources",
+  "version": "0.1.0",
+  "description": "Foundry VTT module for character sheet custom resources",
+  "scripts": {
+    "build": "echo 'No build step'"
+  },
+  "private": true
+}
