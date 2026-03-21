@@ -145,16 +145,22 @@ function escapeHtml(str) {
 }
 
 /**
- * Spellcraft-style resource row: icon, name (content link if uuid), Uses, +/-, edit, delete.
+ * Spellcraft-style resource row: icon (click = send to chat), name (content link if uuid), Uses, +/-, edit, delete.
  */
 function renderResourceRow(r, canEdit) {
   const nameCell = r.uuid
-    ? `<a class="content-link charres-resource-link" data-uuid="${escapeHtml(r.uuid)}">${escapeHtml(r.name)} &gt;&gt;</a>`
+    ? `<a class="content-link charres-resource-link" data-uuid="${escapeHtml(r.uuid)}">${escapeHtml(r.name)}</a>`
     : `<span class="charres-resource-name">${escapeHtml(r.name)}</span>`;
   const usesStr = r.max != null ? `${r.value} / ${r.max}` : String(r.value);
+  const sendToChatTitle = typeof game.i18n?.localize === "function" ? game.i18n.localize("PF2E.NPC.SendToChat") : "Send to Chat";
+  const iconCell = r.uuid && r.icon
+    ? `<a class="charres-icon-link framed" data-action="send-to-chat" data-uuid="${escapeHtml(r.uuid)}" data-tooltip="${escapeHtml(sendToChatTitle)}" title="${escapeHtml(sendToChatTitle)}"><img class="charres-icon" src="${escapeHtml(r.icon)}" alt="" /><i class="fas fa-comment-alt"></i></a>`
+    : r.icon
+      ? `<span class="charres-icon-wrap"><img class="charres-icon" src="${escapeHtml(r.icon)}" alt="" /></span>`
+      : '<span class="charres-icon-placeholder"></span>';
   return `
     <tr class="charres-row" data-resource-id="${escapeHtml(r.id)}">
-      <td class="charres-cell-icon">${r.icon ? `<img class="charres-icon" src="${escapeHtml(r.icon)}" alt="" />` : '<span class="charres-icon-placeholder"></span>'}</td>
+      <td class="charres-cell-icon">${iconCell}</td>
       <td class="charres-cell-name">${nameCell}</td>
       <td class="charres-cell-uses">${usesStr}</td>
       <td class="charres-cell-controls">
@@ -176,18 +182,19 @@ function renderSpellcraftBlock(actor) {
     canEdit &&
     `
     <tr class="charres-add-row">
-      <td colspan="2" class="charres-add-cell">
-        <div class="charres-add-area">
-          <button type="button" class="charres-add-box" data-action="add-custom" title="${game.i18n.localize("CHARRES.AddCustom")}">
-            <i class="fas fa-plus"></i>
-          </button>
-          <div class="charres-drop-zone" data-drop-zone>
-            <i class="fas fa-arrow-down"></i>
-            <span>${game.i18n.localize("CHARRES.DropHere")}</span>
-          </div>
+      <td class="charres-cell-icon charres-add-icon-td">
+        <button type="button" class="charres-add-box" data-action="add-custom" title="${game.i18n.localize("CHARRES.AddCustom")}">
+          <i class="fas fa-plus" aria-hidden="true"></i>
+        </button>
+      </td>
+      <td class="charres-cell-name charres-add-drop-td">
+        <div class="charres-drop-zone" data-drop-zone>
+          <i class="fas fa-arrow-down"></i>
+          <span>${game.i18n.localize("CHARRES.DropHere")}</span>
         </div>
       </td>
-      <td colspan="2"></td>
+      <td class="charres-cell-uses charres-add-filler"></td>
+      <td class="charres-cell-controls charres-add-filler"></td>
     </tr>`;
 
   return `
@@ -244,10 +251,18 @@ function renderBlock(actor) {
     canEdit &&
     `<button type="button" class="character-resources-manage" data-action="manage">${game.i18n.localize("CHARRES.Manage")}</button>`;
 
+  const dropZone =
+    canEdit &&
+    `<div class="character-resources-drop-zone charres-drop-zone" data-drop-zone title="${game.i18n.localize("CHARRES.DropHere")}">
+      <i class="fas fa-arrow-down"></i>
+      <span>${game.i18n.localize("CHARRES.DropHere")}</span>
+    </div>`;
+
   return `
     <section class="character-resources">
       <h3 class="character-resources-title">${game.i18n.localize("CHARRES.Title")}</h3>
       <ul class="character-resources-list">${listHtml}</ul>
+      ${dropZone || ""}
       ${manageBtn || ""}
     </section>`;
 }
@@ -260,6 +275,39 @@ function renderBlock(actor) {
  */
 function bindBlockEvents(app, $block, actor, onRefresh) {
   const refresh = onRefresh ?? (() => refreshBlock(app));
+
+  // Inline drop zone: same as dialog – accept spells, items, feats, any document with uuid
+  const inlineDropZone = $block.find("[data-drop-zone]").get(0);
+  if (inlineDropZone && actor.canUserModify(game.user, "update")) {
+    inlineDropZone.addEventListener("dragover", (e) => {
+      // Can't read data during dragover, but can check if text/plain is available
+      if (e.dataTransfer?.types?.includes("text/plain") || e.dataTransfer?.types?.includes("application/json")) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "copy";
+        inlineDropZone.classList.add("charres-drop-over");
+      }
+    });
+    inlineDropZone.addEventListener("dragleave", () => {
+      inlineDropZone.classList.remove("charres-drop-over");
+    });
+    inlineDropZone.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      inlineDropZone.classList.remove("charres-drop-over");
+      const dragData = getDragDataFromEvent(e);
+      if (!dragData) return;
+      try {
+        const doc = await resolveDocumentFromDragData(dragData, actor);
+        if (doc && typeof doc.name === "string") {
+          await api.addResourceFromDocument(actor, doc, { value: 0, max: 1 });
+          refresh();
+        }
+      } catch (err) {
+        console.error("[pf2e-character-resources] Error handling drop:", err);
+      }
+    });
+  }
 
   $block.on("click", "[data-action=increment]", (e) => {
     e.preventDefault();
@@ -341,34 +389,40 @@ function openResourcesDialog(actor) {
   ).render(true);
 }
 
+/** jQuery event namespace so refresh() can replace handlers without stacking duplicates */
+const CHARRES_EVT_NS = ".pf2eCharRes";
+
 /**
  * Bind events for the spellcraft-style dialog: row actions, + add custom, drop zone, content links.
+ * Must remove old handlers first: refresh() rebinds on the same $content node and would otherwise stack.
  */
 function bindSpellcraftEvents($content, actor, refresh) {
   const canEdit = actor.canUserModify(game.user, "update");
 
+  $content.off(CHARRES_EVT_NS);
+
   const getResourceId = (el) => $(el).closest("[data-resource-id]").attr("data-resource-id");
 
-  $content.on("click", "[data-action=increment]", (e) => {
+  $content.on(`click${CHARRES_EVT_NS}`, "[data-action=increment]", (e) => {
     e.preventDefault();
     const id = getResourceId(e.currentTarget);
     if (!id) return;
     const delta = e.shiftKey ? 10 : e.ctrlKey || e.metaKey ? 5 : 1;
     api.increment(actor, id, delta).then(refresh);
   });
-  $content.on("click", "[data-action=decrement]", (e) => {
+  $content.on(`click${CHARRES_EVT_NS}`, "[data-action=decrement]", (e) => {
     e.preventDefault();
     const id = getResourceId(e.currentTarget);
     if (!id) return;
     const delta = e.shiftKey ? 10 : e.ctrlKey || e.metaKey ? 5 : 1;
     api.decrement(actor, id, delta).then(refresh);
   });
-  $content.on("click", "[data-action=edit]", (e) => {
+  $content.on(`click${CHARRES_EVT_NS}`, "[data-action=edit]", (e) => {
     e.preventDefault();
     const id = getResourceId(e.currentTarget);
     if (id) openEditResourceDialog(actor, id, refresh);
   });
-  $content.on("click", "[data-action=delete]", (e) => {
+  $content.on(`click${CHARRES_EVT_NS}`, "[data-action=delete]", (e) => {
     e.preventDefault();
     const id = getResourceId(e.currentTarget);
     if (!id) return;
@@ -376,13 +430,29 @@ function bindSpellcraftEvents($content, actor, refresh) {
       api.removeResource(actor, id).then(refresh);
     }
   });
-  $content.on("click", "[data-action=add-custom]", (e) => {
+  $content.on(`click${CHARRES_EVT_NS}`, "[data-action=add-custom]", (e) => {
     e.preventDefault();
     openEditResourceDialog(actor, null, refresh);
   });
 
+  // Icon click: send item/spell description to chat (same as spells tab)
+  $content.on(`click${CHARRES_EVT_NS}`, "[data-action=send-to-chat]", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const uuid = e.currentTarget.dataset.uuid;
+    if (!uuid) return;
+    try {
+      const doc = await resolveUuid(uuid);
+      if (doc && typeof doc.toMessage === "function") {
+        await doc.toMessage(e.originalEvent ?? e, { create: true });
+      }
+    } catch (_) {
+      // ignore
+    }
+  });
+
   // Content links: open linked document sheet
-  $content.on("click", "a.content-link.charres-resource-link", (e) => {
+  $content.on(`click${CHARRES_EVT_NS}`, "a.content-link.charres-resource-link", (e) => {
     e.preventDefault();
     const uuid = e.currentTarget.dataset.uuid;
     if (uuid) {
@@ -390,13 +460,17 @@ function bindSpellcraftEvents($content, actor, refresh) {
     }
   });
 
-  // Drop zone: accept Item (and other documents with name/img)
+  // Drop zone: accept Item (spells, feats, equipment), Actor, or any document with uuid (PF2e/Foundry drag format)
   const dropZone = $content.find("[data-drop-zone]").get(0);
   if (dropZone && canEdit) {
     dropZone.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropZone.classList.add("charres-drop-over");
+      // Can't read data during dragover, but can check if text/plain is available
+      if (e.dataTransfer?.types?.includes("text/plain") || e.dataTransfer?.types?.includes("application/json")) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "copy";
+        dropZone.classList.add("charres-drop-over");
+      }
     });
     dropZone.addEventListener("dragleave", (e) => {
       dropZone.classList.remove("charres-drop-over");
@@ -405,28 +479,102 @@ function bindSpellcraftEvents($content, actor, refresh) {
       e.preventDefault();
       e.stopPropagation();
       dropZone.classList.remove("charres-drop-over");
-      let uuid = e.dataTransfer.getData("text/plain");
-      if (!uuid) {
-        const json = e.dataTransfer.getData("application/json");
-        if (json) {
-          try {
-            const data = JSON.parse(json);
-            uuid = data.uuid ?? data.document?.uuid ?? data.id ?? "";
-          } catch (_) {}
-        }
+      const dragData = getDragDataFromEvent(e);
+      if (!dragData) {
+        console.warn("[pf2e-character-resources] No drag data found");
+        return;
       }
-      if (!uuid) return;
       try {
-        const doc = await resolveUuid(uuid);
+        const doc = await resolveDocumentFromDragData(dragData, actor);
         if (doc && typeof doc.name === "string") {
           await api.addResourceFromDocument(actor, doc, { value: 0, max: 1 });
           refresh();
+        } else {
+          console.warn("[pf2e-character-resources] Could not resolve document from drag data", dragData);
         }
-      } catch (_) {
-        // ignore
+      } catch (err) {
+        console.error("[pf2e-character-resources] Error handling drop:", err);
       }
     });
   }
+}
+
+/**
+ * Extract drag data from a drag event. PF2e and Foundry set "text/plain" to JSON
+ * (e.g. { type: "Item", uuid: "Actor.xxx.Item.yyy", actorId: "...", ... }) when dragging from sheets or
+ * compendia; content links may set UUID directly. Supports both formats.
+ * @param {DragEvent} e
+ * @returns {object|null} Parsed drag data object or null if none found
+ */
+function getDragDataFromEvent(e) {
+  const raw = e.dataTransfer?.getData("text/plain")?.trim();
+  if (!raw) {
+    const json = e.dataTransfer?.getData("application/json");
+    if (json) {
+      try {
+        return JSON.parse(json);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+  try {
+    const data = JSON.parse(raw);
+    if (data && typeof data === "object") {
+      return data;
+    }
+  } catch (_) {
+    // not JSON: treat as raw UUID string
+    if (raw.length > 0) {
+      return { uuid: raw };
+    }
+  }
+  return null;
+}
+
+/**
+ * Resolve a document from drag data. Handles both absolute UUIDs and actor-relative item IDs.
+ * @param {object} dragData - Parsed drag data from getDragDataFromEvent
+ * @param {Actor} actor - The actor context (for resolving relative item IDs)
+ * @returns {Promise<foundry.abstract.Document|null>}
+ */
+async function resolveDocumentFromDragData(dragData, actor) {
+  // Try absolute UUID first
+  let uuid = dragData.uuid ?? dragData.document?.uuid;
+  if (uuid && typeof uuid === "string") {
+    try {
+      const doc = await resolveUuid(uuid);
+      if (doc) return doc;
+    } catch (_) {
+      // UUID resolution failed, try relative ID below
+    }
+  }
+
+  // If we have actorId and item ID, try to resolve from actor's items
+  if (dragData.type === "Item" && dragData.actorId && dragData.id) {
+    const sourceActor = game.actors?.get(dragData.actorId);
+    if (sourceActor) {
+      const item = sourceActor.items.get(dragData.id);
+      if (item) return item;
+    }
+  }
+
+  // Try resolving from current actor if we have an item ID
+  if (dragData.type === "Item" && dragData.id && actor) {
+    const item = actor.items.get(dragData.id);
+    if (item) return item;
+  }
+
+  // Last resort: try any ID field as UUID
+  const id = dragData.id ?? dragData._id;
+  if (id && typeof id === "string" && id.includes(".")) {
+    try {
+      return await resolveUuid(id);
+    } catch (_) {}
+  }
+
+  return null;
 }
 
 /**
@@ -439,7 +587,36 @@ export function renderCharacterResources(actor) {
 }
 
 /**
+ * Resolve the edit form from Dialog callback html (jQuery or HTMLElement in different Foundry versions).
+ * @param {JQuery|HTMLElement} html
+ * @returns {HTMLFormElement|null}
+ */
+function getFormFromDialogHtml(html) {
+  if (!html) return null;
+  if (typeof html.jquery !== "undefined" && html.jquery && typeof html.find === "function") {
+    const f = html.find("form");
+    return f.length ? f[0] : null;
+  }
+  if (html instanceof HTMLFormElement) return html;
+  if (html instanceof HTMLElement) return html.querySelector("form");
+  return null;
+}
+
+/**
+ * Parse max from optional number input; empty = null, invalid = null.
+ * @param {string} raw
+ * @returns {number|null}
+ */
+function parseMaxField(raw) {
+  const t = String(raw ?? "").trim();
+  if (t === "") return null;
+  const n = parseInt(t, 10);
+  return Number.isFinite(n) ? Math.max(0, n) : null;
+}
+
+/**
  * Open dialog to add or edit a resource (name, description, quantity). Linked resources show "Linked to document".
+ * Description is only editable for custom (non-linked) resources.
  * @param {Actor} actor
  * @param {string|null} resourceId - null = add new (custom)
  * @param {() => void} onClose
@@ -458,6 +635,14 @@ function openEditResourceDialog(actor, resourceId, onClose) {
     ? `<p class="charres-form-linked-note"><i class="fas fa-link"></i> ${game.i18n.localize("CHARRES.LinkedTo")}</p>`
     : "";
 
+  const descriptionBlock =
+    isLinked
+      ? `<p class="charres-form-linked-desc-hint">${game.i18n.localize("CHARRES.LinkedDescriptionHint")}</p>`
+      : `<div class="form-group">
+        <label>${game.i18n.localize("CHARRES.Description")}</label>
+        <textarea name="description" rows="3" placeholder="${game.i18n.localize("CHARRES.DescriptionPlaceholder")}">${escapeHtml(descVal)}</textarea>
+      </div>`;
+
   const content = `
     <form class="character-resource-form charres-form">
       ${linkedNote}
@@ -465,10 +650,7 @@ function openEditResourceDialog(actor, resourceId, onClose) {
         <label>${game.i18n.localize("CHARRES.Name")}</label>
         <input type="text" name="name" value="${escapeHtml(nameVal)}" ${isLinked ? "readonly" : ""} required />
       </div>
-      <div class="form-group">
-        <label>${game.i18n.localize("CHARRES.Description")}</label>
-        <textarea name="description" rows="3" placeholder="${game.i18n.localize("CHARRES.DescriptionPlaceholder")}">${escapeHtml(descVal)}</textarea>
-      </div>
+      ${descriptionBlock}
       <div class="form-group">
         <label>${game.i18n.localize("CHARRES.Value")}</label>
         <input type="number" name="value" min="0" value="${valueVal}" />
@@ -483,7 +665,21 @@ function openEditResourceDialog(actor, resourceId, onClose) {
       </div>
     </form>`;
 
-  new Dialog(
+  /** @type {Dialog|null} */
+  let dlg = null;
+
+  const closeAfterSave = async () => {
+    try {
+      if (dlg?.rendered) {
+        await dlg.close({ force: true });
+      }
+    } catch (_) {
+      /* already closed */
+    }
+    onClose?.();
+  };
+
+  dlg = new Dialog(
     {
       title: isNew ? game.i18n.localize("CHARRES.AddCustom") : game.i18n.localize("CHARRES.EditResource"),
       content,
@@ -492,19 +688,36 @@ function openEditResourceDialog(actor, resourceId, onClose) {
           icon: '<i class="fas fa-check"></i>',
           label: game.i18n.localize("CHARRES.Save"),
           callback: async (html) => {
-            const form = html[0].querySelector("form");
-            const name = form.name.value.trim();
-            const description = form.description?.value?.trim() ?? "";
-            const value = parseInt(form.value.value, 10) || 0;
-            const max = form.max.value.trim() === "" ? null : Math.max(0, parseInt(form.max.value, 10));
-            const icon = form.icon.value.trim();
-            if (isNew) {
-              await api.addResource(actor, { name, description, value, max, icon });
-            } else {
-              await api.updateResource(actor, resourceId, { name, description, max, icon });
-              await api.set(actor, resourceId, value);
+            const form = getFormFromDialogHtml(html);
+            if (!form) {
+              ui?.notifications?.warn("Character Resources: form not found.");
+              return;
             }
-            onClose?.();
+            const freshActor = game.actors?.get(actor.id) ?? actor;
+            const name = form.elements.namedItem("name")?.value?.trim?.() ?? "";
+            const description = isLinked ? "" : (form.elements.namedItem("description")?.value?.trim?.() ?? "");
+            const value = parseInt(form.elements.namedItem("value")?.value ?? "0", 10) || 0;
+            const max = parseMaxField(form.elements.namedItem("max")?.value);
+            const icon = form.elements.namedItem("icon")?.value?.trim?.() ?? "";
+            try {
+              if (isNew) {
+                if (!name) {
+                  ui?.notifications?.warn(game.i18n.localize("CHARRES.Name") + " required.");
+                  return;
+                }
+                await api.addResource(freshActor, { name, description, value, max, icon });
+              } else if (isLinked) {
+                await api.updateResource(freshActor, resourceId, { max, description: "" });
+                await api.set(freshActor, resourceId, value);
+              } else {
+                await api.updateResource(freshActor, resourceId, { name, description, max, icon });
+                await api.set(freshActor, resourceId, value);
+              }
+              await closeAfterSave();
+            } catch (err) {
+              console.error("[pf2e-character-resources] Save failed:", err);
+              ui?.notifications?.error(err?.message ?? String(err));
+            }
           },
         },
         delete: isNew
@@ -513,9 +726,14 @@ function openEditResourceDialog(actor, resourceId, onClose) {
               icon: '<i class="fas fa-trash"></i>',
               label: game.i18n.localize("CHARRES.Delete"),
               callback: async () => {
-                if (window.confirm(game.i18n.localize("CHARRES.ConfirmDelete"))) {
-                  await api.removeResource(actor, resourceId);
-                  onClose?.();
+                if (!window.confirm(game.i18n.localize("CHARRES.ConfirmDelete"))) return;
+                const freshActor = game.actors?.get(actor.id) ?? actor;
+                try {
+                  await api.removeResource(freshActor, resourceId);
+                  await closeAfterSave();
+                } catch (err) {
+                  console.error("[pf2e-character-resources] Delete failed:", err);
+                  ui?.notifications?.error(err?.message ?? String(err));
                 }
               },
             },
@@ -526,8 +744,9 @@ function openEditResourceDialog(actor, resourceId, onClose) {
       },
       default: "save",
     },
-    { width: 400 }
-  ).render(true);
+    { width: 400, jQuery: true }
+  );
+  dlg.render(true);
 }
 
 /**

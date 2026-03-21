@@ -22,5 +22,6 @@
   "CHARRES.ManageResources": "Manage character resources",
   "CHARRES.ManageHint": "Add, edit, or remove custom resources for this character. Use +/- to change values.",
   "CHARRES.DropHere": "Drop feat, spell, or item here",
-  "CHARRES.LinkedTo": "Linked to document"
+  "CHARRES.LinkedTo": "Linked to document",
+  "CHARRES.LinkedDescriptionHint": "Description comes from the linked item. Use the resource icon (chat) or open the item sheet to view it."
 }

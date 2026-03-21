@@ -62,6 +62,12 @@
   padding: 0;
 }
 
+/* Inline drop zone (sheet block): compact, below the list */
+.character-resources .character-resources-drop-zone {
+  margin-top: 0.5em;
+  flex: none;
+}
+
 .character-resource {
   display: flex;
   flex-wrap: wrap;
@@ -271,6 +277,14 @@
   color: var(--color-text-muted, #666);
 }
 
+.charres-form-linked-desc-hint {
+  margin: 0 0 0.75em 0;
+  font-size: 0.85em;
+  line-height: 1.35;
+  color: var(--color-text-muted, #666);
+  font-style: italic;
+}
+
 /* ---- Spellcraft-style Character Resources dialog ---- */
 .charres-dialog-content {
   min-width: 320px;
@@ -296,28 +310,50 @@
 .charres-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.95em;
+  font-size: 0.9em;
 }
 
 .charres-table th,
 .charres-table td {
-  padding: 0.35em 0.4em;
+  padding: 0.2em 0.35em;
   text-align: left;
   vertical-align: middle;
   border-bottom: 1px solid var(--color-border-light-secondary, rgba(0, 0, 0, 0.08));
 }
 
+.charres-row {
+  line-height: 1.3;
+}
+
 .charres-th-name,
 .charres-cell-name {
-  min-width: 120px;
+  min-width: 100px;
+}
+
+.charres-cell-name .charres-resource-link,
+.charres-cell-name .charres-resource-name {
+  display: inline-block;
+  padding: 0.15em 0.4em;
+  line-height: 1.25;
+  border-radius: 3px;
+}
+
+.charres-cell-name .charres-resource-link {
+  background: var(--color-border-light-secondary, rgba(0, 0, 0, 0.06));
+  border: 1px solid transparent;
+}
+
+.charres-cell-name .charres-resource-link:hover {
+  background: var(--color-border-light-primary, rgba(0, 0, 0, 0.1));
 }
 
 .charres-th-uses,
 .charres-cell-uses {
-  width: 5em;
-  min-width: 4em;
+  width: 4.5em;
+  min-width: 3.5em;
   text-align: center;
   white-space: nowrap;
+  font-size: 0.95em;
 }
 
 .charres-th-controls,
@@ -327,22 +363,91 @@
 }
 
 .charres-cell-icon {
-  width: 2em;
+  width: 1.75rem;
+  padding-right: 0.25em;
+  vertical-align: middle;
 }
 
-.charres-icon {
-  width: 1.75em;
-  height: 1.75em;
+.charres-icon-link {
+  display: flex;
+  flex: 0 0 1.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-radius: 2px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+/* PF2e .item-image.framed / frame-icon mixin (dialog is outside .actor.sheet, so we mirror it here) */
+.charres-icon-link.framed,
+.charres-add-box {
+  --charres-frame-inset: 0.125rem;
+  border: none;
+  border-radius: 2px;
+  background-color: var(--tertiary, #e8dccc);
+  box-shadow:
+    0 0 0 1px var(--tertiary, #e8dccc),
+    0 0 0 2px #9f725b,
+    inset 0 0 var(--charres-frame-inset) rgba(0, 0, 0, 0.5);
+}
+
+.charres-icon-link.framed {
+  cursor: pointer;
+}
+
+.charres-icon-link .charres-icon {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-  border-radius: 3px;
+  border: none;
+  border-radius: 0;
+}
+
+.charres-icon-link i {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--color-text-dark, #333);
+  background: var(--color-bg-button, #e8e6e3);
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.15);
+}
+
+.charres-icon-link:hover i {
+  display: flex;
+}
+
+.charres-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.charres-icon,
+.charres-icon-wrap .charres-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
+  border-radius: 2px;
 }
 
 .charres-icon-placeholder {
   display: inline-block;
-  width: 1.75em;
-  height: 1.75em;
-  background: var(--color-border-light-secondary, rgba(0, 0, 0, 0.1));
-  border-radius: 3px;
+  box-sizing: border-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 2px;
+  background-color: var(--tertiary, #e8dccc);
+  box-shadow:
+    0 0 0 1px var(--tertiary, #e8dccc),
+    0 0 0 2px #9f725b,
+    inset 0 0 0.125rem rgba(0, 0, 0, 0.5);
 }
 
 .charres-resource-link {
@@ -386,42 +491,64 @@
   padding: 0.75em;
 }
 
-/* + Add box and drop zone (spellcraft-style) */
+/* + Add row: same 4 columns as data rows so + aligns under spell icons */
 .charres-add-row {
   background: var(--color-bg-app, rgba(0, 0, 0, 0.03));
 }
 
-.charres-add-cell {
-  padding: 0.5em 0.4em;
+.charres-add-icon-td,
+.charres-add-drop-td,
+.charres-add-filler {
   vertical-align: middle;
 }
 
-.charres-add-area {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  flex-wrap: wrap;
+.charres-add-drop-td .charres-drop-zone {
+  width: 100%;
 }
 
+/* Same 1.5rem tile as PF2e .item-image; shared frame with .charres-icon-link.framed above */
 .charres-add-box {
-  width: 2.25em;
-  height: 2.25em;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 1.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  margin: 0;
   padding: 0;
-  border: 2px solid var(--color-border-dark, #555);
-  border-radius: 4px;
-  background: var(--color-bg-button, #e0e0e0);
-  color: var(--color-text-dark, #333);
+  color: var(--text-dark, var(--color-text-dark, #1a1a1a));
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1em;
+  line-height: 0;
   flex-shrink: 0;
+  vertical-align: middle;
+  font: inherit;
+}
+
+/* Center Font Awesome + (glyph is ::before; flex + line-height fixes vertical drift) */
+.charres-add-box i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-size: 0.55rem;
+  line-height: 1;
+  pointer-events: none;
 }
 
 .charres-add-box:hover {
-  background: var(--color-bg-button-hover, #ccc);
-  border-color: var(--color-border-dark, #333);
+  filter: brightness(1.05);
+}
+
+.charres-add-box:active {
+  filter: brightness(0.97);
 }
 
 .charres-drop-zone {
